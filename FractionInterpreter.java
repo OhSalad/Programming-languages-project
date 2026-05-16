@@ -41,6 +41,7 @@ public class FractionInterpreter {
     private static final class Lexer {
         private final String input;
         private int index;
+        private TokenType previousTokenType;
 
         private Lexer(String input) {
             this.input = input == null ? "" : input;
@@ -60,25 +61,28 @@ public class FractionInterpreter {
             switch (current) {
                 case '+':
                     index++;
-                    return new Token(TokenType.PLUS, "+", start);
+                    return remember(new Token(TokenType.PLUS, "+", start));
                 case '-':
+                    if (canStartNegativeFraction()) {
+                        return remember(scanFraction());
+                    }
                     index++;
-                    return new Token(TokenType.MINUS, "-", start);
+                    return remember(new Token(TokenType.MINUS, "-", start));
                 case '*':
                     index++;
-                    return new Token(TokenType.TIMES, "*", start);
+                    return remember(new Token(TokenType.TIMES, "*", start));
                 case '/':
                     index++;
-                    return new Token(TokenType.DIVIDE, "/", start);
+                    return remember(new Token(TokenType.DIVIDE, "/", start));
                 case '(':
                     index++;
-                    return new Token(TokenType.LEFT_PAREN, "(", start);
+                    return remember(new Token(TokenType.LEFT_PAREN, "(", start));
                 case ')':
                     index++;
-                    return new Token(TokenType.RIGHT_PAREN, ")", start);
+                    return remember(new Token(TokenType.RIGHT_PAREN, ")", start));
                 default:
                     if (Character.isDigit(current)) {
-                        return scanFraction();
+                        return remember(scanFraction());
                     }
                     throw error(start, "Invalid character '" + current + "'. Expected a fraction, operator, or parenthesis.");
             }
@@ -86,10 +90,15 @@ public class FractionInterpreter {
 
         private Token scanFraction() {
             int start = index;
+
+            if (!isAtEnd() && input.charAt(index) == '-') {
+                index++;
+            }
+
             readDigits();
 
             if (isAtEnd() || input.charAt(index) != '/') {
-                throw error(start, "Invalid number '" + input.substring(start, index) + "'. Only fractions like 2/3 are valid constants.");
+                throw error(start, "Invalid number '" + input.substring(start, index) + "'. Only fractions like 2/3 or -2/3 are valid constants.");
             }
 
             index++;
@@ -100,6 +109,26 @@ public class FractionInterpreter {
 
             readDigits();
             return new Token(TokenType.FRACTION, input.substring(start, index), start);
+        }
+
+        private boolean canStartNegativeFraction() {
+            if (index + 1 >= input.length() || !Character.isDigit(input.charAt(index + 1))) {
+                return false;
+            }
+
+            return previousTokenType == null
+                    || previousTokenType == TokenType.PLUS
+                    || previousTokenType == TokenType.MINUS
+                    || previousTokenType == TokenType.TIMES
+                    || previousTokenType == TokenType.DIVIDE
+                    || previousTokenType == TokenType.LEFT_PAREN;
+        }
+
+        private Token remember(Token token) {
+            if (token.type != TokenType.EOF) {
+                previousTokenType = token.type;
+            }
+            return token;
         }
 
         private void readDigits() {

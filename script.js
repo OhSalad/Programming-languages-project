@@ -86,6 +86,7 @@ function buildSimulation(source) {
 function lex(source, steps) {
   const tokens = [];
   let index = 0;
+  let previousTokenType = null;
 
   while (index < source.length) {
     const current = source[index];
@@ -97,12 +98,14 @@ function lex(source, steps) {
 
     const start = index;
 
-    if (isDigit(current)) {
+    if (isDigit(current) || (current === "-" && canStartNegativeFraction(source, index, previousTokenType))) {
+      if (current === "-") index += 1;
+
       while (isDigit(source[index])) index += 1;
 
       if (source[index] !== "/") {
         const errorToken = { type: "ERROR", lexeme: source.slice(start, index), position: start };
-        throw makeError(`Lexer error at position ${start + 1}: '${source.slice(start, index)}' is not a fraction.`, {
+        throw makeError(`Lexer error at position ${start + 1}: '${source.slice(start, index)}' is not a fraction. Use a form like 2/3 or -2/3.`, {
           tokens: [...tokens, errorToken],
           lexerStates: makeStates([...tokens, errorToken], tokens.length, "error"),
         });
@@ -121,6 +124,7 @@ function lex(source, steps) {
       while (isDigit(source[index])) index += 1;
       const token = { type: TOKEN.FRACTION, lexeme: source.slice(start, index), position: start };
       pushTokenWithSteps(tokens, token, steps, "Lexer scans a fraction.");
+      previousTokenType = token.type;
       continue;
     }
 
@@ -142,7 +146,9 @@ function lex(source, steps) {
     }
 
     index += 1;
-    pushTokenWithSteps(tokens, { type: single, lexeme: current, position: start }, steps, `Lexer scans '${current}'.`);
+    const token = { type: single, lexeme: current, position: start };
+    pushTokenWithSteps(tokens, token, steps, `Lexer scans '${current}'.`);
+    previousTokenType = token.type;
   }
 
   pushTokenWithSteps(tokens, { type: TOKEN.EOF, lexeme: "$$", position: source.length }, steps, "Lexer reaches end of input.");
@@ -351,4 +357,17 @@ function makeError(message, extra = {}) {
 
 function isDigit(char) {
   return char >= "0" && char <= "9";
+}
+
+function canStartNegativeFraction(source, index, previousTokenType) {
+  if (!isDigit(source[index + 1])) {
+    return false;
+  }
+
+  return previousTokenType === null
+    || previousTokenType === TOKEN.PLUS
+    || previousTokenType === TOKEN.MINUS
+    || previousTokenType === TOKEN.TIMES
+    || previousTokenType === TOKEN.DIVIDE
+    || previousTokenType === TOKEN.LEFT_PAREN;
 }
