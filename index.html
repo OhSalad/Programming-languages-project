@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fraction Parser Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="control-panel" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">Fraction Parser Visualizer</h1>
+        <p>Watch the lexer and recursive-descent parser process a fraction expression one state at a time.</p>
+      </div>
+
+      <form id="expression-form" class="input-row">
+        <input
+          id="expression-input"
+          type="text"
+          value="1/5 * (2/11 - 5/3)"
+          aria-label="Fraction expression"
+          autocomplete="off"
+        >
+        <button type="submit">Animate</button>
+      </form>
+    </section>
+
+    <section class="status-strip" aria-live="polite">
+      <div>
+        <span class="label">Current state</span>
+        <strong id="state-title">Ready</strong>
+      </div>
+      <div>
+        <span class="label">Parser method</span>
+        <strong id="parser-method">-</strong>
+      </div>
+      <div>
+        <span class="label">Result</span>
+        <strong id="result-value">-</strong>
+      </div>
+    </section>
+
+    <section class="stage" aria-label="Lexer and parser animation">
+      <div class="rail-labels">
+        <span>Input queue</span>
+        <span>Current action</span>
+        <span>Accepted / error</span>
+      </div>
+
+      <article class="track" aria-labelledby="lexer-heading">
+        <div class="track-heading">
+          <h2 id="lexer-heading">Lexer</h2>
+          <p>Turns characters into tokens.</p>
+        </div>
+        <div id="lexer-boxes" class="box-lane"></div>
+      </article>
+
+      <article class="track" aria-labelledby="parser-heading">
+        <div class="track-heading">
+          <h2 id="parser-heading">Parser</h2>
+          <p>Matches tokens using recursive-descent grammar.</p>
+        </div>
+        <div id="parser-boxes" class="box-lane"></div>
+      </article>
+    </section>
+
+    <section class="details-grid">
+      <article>
+        <h2>Grammar</h2>
+        <pre><code>expr   -> term termTail
+term   -> factor factorTail
+factor -> FRACTION | ( expr )</code></pre>
+      </article>
+      <article>
+        <h2>Event log</h2>
+        <ol id="event-log" class="event-log"></ol>
+      </article>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
